@@ -154,6 +154,15 @@ class BookController extends Controller
 
     public function destroy(Book $book)
     {
-        //
+        if($book->cover) {
+            $oldImagePath = str_replace('/storage/','',$book->cover);
+
+            if (storage::disk('public')->exists(($oldImagePath))){
+                storage::disk('public')->delete($oldImagePath);
+            }
+        }
+
+        $book->delete();
+        return redirect()->route('admin.books.index')->with('succses','buku berhasil di hapus');
     }
 }

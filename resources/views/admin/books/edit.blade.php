@@ -66,10 +66,10 @@
                         @enderror
                     </div>
                     <div class="mb-3 col-6">
-                        <label for="language" class="form-label">Bahasa</label>
                         @php
                             $languages = ['Indonesia', 'Inggris', 'Jepang', 'Mandarin', 'Arab'];
                         @endphp
+                        <label for="language" class="form-label">Bahasa</label>
                         <select class="form-select @error('language') is-invalid @enderror" id="language" name="language">
                             <option value="">Pilih Bahasa</option>
                             @foreach ($languages as $lang)
