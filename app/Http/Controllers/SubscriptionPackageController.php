@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SubscriptionPackage;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -23,6 +24,7 @@ class SubscriptionPackageController extends Controller
                     $destroyUrl = route('admin.subscription-packages.destroy', $row->id);
                     $csrf = csrf_field();
                     $method = method_field('DELETE');
+                    $books = route('admin.subscription-packages-books', $row->id);
 
                     return '
                     <a href="'.$editUrl.'" class="btn btn-sm btn-primary">Edit</a>
@@ -32,6 +34,7 @@ class SubscriptionPackageController extends Controller
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Apakah Anda yakin ingin menghapus Data
                     ini?\')">Hapus</button>
                     </form>
+                    <a href="'.$books.'" class="btn btn-sm btn-info">Books</a>
                 ';
                 })
                 ->rawColumns(['action'])
@@ -75,9 +78,23 @@ class SubscriptionPackageController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(SubscriptionPackage $subscriptionPackage)
+    public function show(Request $request, SubscriptionPackage $subscriptionPackage): View
     {
-        //
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+        ]);
+        $query = trim($validated['q'] ?? '');
+
+        $packageBooks = $subscriptionPackage->subscriptionPackageBook()
+            ->with('book')
+            ->when($query !== '', function ($packageBooks) use ($query) {
+                $packageBooks->whereHas('book', function ($books) use ($query) {
+                    $books->where('title', 'like', '%'.$query.'%');
+                });
+            })
+            ->get();
+
+        return view('subscription-packages.show', compact('subscriptionPackage', 'packageBooks', 'query'));
     }
 
     /**

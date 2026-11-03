@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BookCategoryController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\SubscriptionPackageBookController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [UserController::class, 'home'])->name('home');
 Route::get('/search', [UserController::class, 'search'])->name('search');
 Route::get('/categories/{category}', [BookCategoryController::class, 'show'])->name('categories.show');
+Route::get('/subscription-packages/{subscriptionPackage}', [SubscriptionPackageController::class, 'show'])
+    ->name('subscription-packages.show');
 
 // kelompok routen yang gaboleh di akses kalau udah login
 Route::middleware(['IsGuest'])->group(function () {
@@ -38,6 +41,7 @@ Route::middleware(['IsLoggedIn'])->group(function () {
         Route::resource('book-categories', BookCategoryController::class)->except('show');
         Route::resource('subscription-packages', SubscriptionPackageController::class)->except('show');
         Route::resource('books', BookController::class)->except('show');
-
+        Route::get('subscription-packages/{id}/books', [SubscriptionPackageBookController::class, 'show'])->name('subscription-packages-books');
+        Route::post('subscription-packages/{id}/books', [SubscriptionPackageBookController::class, 'store'])->name('subscription-packages-books.store');
     });
 });

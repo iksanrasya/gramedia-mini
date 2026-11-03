@@ -60,16 +60,19 @@
             <div class="row g-4">
                 @forelse ($subscriptionPackages as $package)
                     <div class="col-md-4">
-                        <div class="card h-100 shadow-sm border-0"
-                            style="background-color: {{ $package->color }};">
-                            <div class="card-body text-center text-dark">
-                                <h2 class="fw-bold">{{ $package->name_package }}</h2>
-                                @if ($package->description)
-                                    <p>{{ $package->description }}</p>
-                                @endif
-                                <p class="fs-3 fw-bold mb-0">Rp {{ number_format($package->price, 0, ',', '.') }}</p>
+                        <a href="{{ route('subscription-packages.show', $package) }}"
+                            class="text-decoration-none text-reset">
+                            <div class="card h-100 shadow-sm border-0"
+                                style="background-color: {{ $package->color }};">
+                                <div class="card-body text-center text-dark">
+                                    <h2 class="fw-bold">{{ $package->name_package }}</h2>
+                                    @if ($package->description)
+                                        <p>{{ $package->description }}</p>
+                                    @endif
+                                    <p class="fs-3 fw-bold mb-0">Rp {{ number_format($package->price, 0, ',', '.') }}</p>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 @empty
                     <div class="col-12">

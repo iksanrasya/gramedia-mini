@@ -127,6 +127,66 @@ class ApplicationBehaviorTest extends TestCase
             ->assertSee('style="background-color: #abcdef;"', false);
     }
 
+    public function test_homepage_subscription_package_card_links_to_its_detail_page(): void
+    {
+        $package = SubscriptionPackage::create([
+            'name_package' => 'Paket Detail',
+            'description' => 'Kumpulan pilihan',
+            'color' => '#abcdef',
+            'price' => 49000,
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee(route('subscription-packages.show', $package), false);
+    }
+
+    public function test_guest_sees_only_books_linked_to_the_selected_subscription_package(): void
+    {
+        $category = BookCategory::create(['name' => 'Fiksi']);
+        $package = SubscriptionPackage::create([
+            'name_package' => 'Paket Pilihan',
+            'description' => 'Pilihan buku',
+            'color' => '#abcdef',
+            'price' => 49000,
+        ]);
+        $linkedBook = $this->createBookInCategory($category, 'Novel Pilihan', 'Penulis A', 10000, '2026-01-01 00:00:00');
+        $unlinkedBook = $this->createBookInCategory($category, 'Novel Lain', 'Penulis B', 20000, '2026-01-02 00:00:00');
+        $package->subscriptionPackageBook()->create(['book_id' => $linkedBook->id]);
+
+        $this->get(route('subscription-packages.show', $package))
+            ->assertOk()
+            ->assertViewIs('subscription-packages.show')
+            ->assertSee('Paket Pilihan')
+            ->assertSee('Rp 49.000')
+            ->assertSee('Novel Pilihan')
+            ->assertDontSee('Novel Lain')
+            ->assertSee('Langganan Sekarang');
+    }
+
+    public function test_subscription_package_detail_search_only_matches_linked_book_titles(): void
+    {
+        $category = BookCategory::create(['name' => 'Fiksi']);
+        $package = SubscriptionPackage::create([
+            'name_package' => 'Paket Pilihan',
+            'price' => 49000,
+            'color' => '#abcdef',
+        ]);
+        $matchingBook = $this->createBookInCategory($category, 'Novel Target', 'Penulis A', 10000, '2026-01-01 00:00:00');
+        $otherLinkedBook = $this->createBookInCategory($category, 'Novel Lain', 'Penulis B', 20000, '2026-01-02 00:00:00');
+        $unlinkedMatchingBook = $this->createBookInCategory($category, 'Target Tidak Tertaut', 'Penulis C', 30000, '2026-01-03 00:00:00');
+        $package->subscriptionPackageBook()->createMany([
+            ['book_id' => $matchingBook->id],
+            ['book_id' => $otherLinkedBook->id],
+        ]);
+
+        $this->get(route('subscription-packages.show', ['subscriptionPackage' => $package, 'q' => 'Target']))
+            ->assertOk()
+            ->assertSee('Novel Target')
+            ->assertDontSee('Novel Lain')
+            ->assertDontSee('Target Tidak Tertaut');
+    }
+
     public function test_category_search_matches_book_title_or_writer_only_in_the_selected_category(): void
     {
         $category = BookCategory::create(['name' => 'Fiksi']);
@@ -223,6 +283,26 @@ class ApplicationBehaviorTest extends TestCase
             ->assertJsonPath('data.0.name_package', 'Fiction')
             ->assertJsonPath('data.0.price', 49000)
             ->assertJsonPath('data.0.description', 'Fiction books');
+    }
+
+    public function test_subscription_package_books_table_marks_books_already_added_to_the_package(): void
+    {
+        $this->actingAs($this->admin());
+        $category = BookCategory::create(['name' => 'Fiksi']);
+        $package = SubscriptionPackage::create([
+            'name_package' => 'Fiction',
+            'price' => 49000,
+            'color' => '#aabbcc',
+        ]);
+        $addedBook = $this->createBookInCategory($category, 'Novel Ditambahkan', 'Penulis A', 10000, '2026-01-01 00:00:00');
+        $this->createBookInCategory($category, 'Novel Tersedia', 'Penulis B', 20000, '2026-01-02 00:00:00');
+        $package->subscriptionPackageBook()->create(['book_id' => $addedBook->id]);
+
+        $this->get(route('admin.subscription-packages-books', $package->id), [
+            'X-Requested-With' => 'XMLHttpRequest',
+        ])->assertOk()
+            ->assertJsonPath('data.0.checkAdded', 'Ya')
+            ->assertJsonPath('data.1.checkAdded', 'Tidak');
     }
 
     public function test_book_table_includes_escaped_details_for_the_modal(): void
