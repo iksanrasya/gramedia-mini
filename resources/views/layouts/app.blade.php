@@ -36,9 +36,6 @@
 
     {{--Bootstrap JavaScript for modal components--}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    {{--CDN Tabler--}}
-    {{-- CDN Tabler --}}
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.5.1/dist/js/tabler.min.js"></script>
     {{-- CDN slickJs --}}
     <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
     {{-- CDN DataTables--}}

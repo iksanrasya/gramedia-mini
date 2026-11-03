@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Book;
+use App\Models\SubscriptionPackage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -132,5 +134,29 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function home()
+    {
+        $latestBooks = Book::orderBy('created_at', 'desc')->limit(10)->get();
+        $freeBooks = Book::where('price', 0)->orderBy('created_at', 'desc')->limit(6)->get();
+        $subscriptionPackages = SubscriptionPackage::query()
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(3)
+            ->get();
+
+        return view('home', compact('latestBooks', 'freeBooks', 'subscriptionPackages'));
+    }
+
+    public function search(Request $request)
+    {
+        $query = trim((string) $request->input('q', ''));
+        $books = Book::query()
+            ->where('title', 'like', '%'.$query.'%')
+            ->orWhere('writer', 'like', '%'.$query.'%')
+            ->get();
+
+        return view('search_results', compact('books', 'query'));
     }
 }

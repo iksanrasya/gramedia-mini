@@ -10,7 +10,7 @@
             </a>
             <!-- END NAVBAR LOGO -->
             {{-- search bar --}}
-            <div class="navbar-nav mx-auto w-50 py-2">
+            <div class="navbar-nav mx-auto w-50 py-2 d-flex flex-row align-items-center gap-2">
                 @if (Auth::check() && Auth::user()->role == 'admin')
                     <li class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                         <a href="{{ route('admin.dashboard') }}" class="nav-link">Dashboard Admin</a>
@@ -25,67 +25,55 @@
                         <a href="{{ route('admin.books.index') }}" class="nav-link">Buku</a>
                     </li>
                 @else
-                    {{-- dropdown --}}
-                    <div class="dropdown">
-                        <a href="#" class="btn btn-light dropdown-toggle me-2"
-                            data-bs-toggle="dropdown">Kategori</a>
-                        <div class="dropdown-menu dropdown-menu-card" style="min-width: 600px">
-                            <div class="p-3">
-                                <div class="row g-2">
-                                    <div class="col-3">
-                                        <div class="card py-2">
-                                            <div class="card-body">
-                                                Kategori 1
-                                            </div>
+                    {{-- Kategori --}}
+                        <div class="dropdown">
+                            <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                Kategori
+                            </button>
+
+                            <div class="dropdown-menu p-3 shadow"
+                                style="width: 840px; max-width: 90vw; border-radius: 12px;">
+
+                                <div class="row row-cols-4 g-2">
+                                    @forelse ($navbarCategories as $category)
+                                        <div class="col">
+                                            <a href="{{ route('categories.show', $category) }}"
+                                                class="card h-100 text-decoration-none text-dark shadow-sm">
+                                                <div class="card-body text-center py-4">
+                                                    {{ $category->name }}
+                                                </div>
+                                            </a>
                                         </div>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="card py-2">
-                                            <div class="card-body">
-                                                Kategori 2
-                                            </div>
+                                    @empty
+                                        <div class="col-12">
+                                            <p class="text-center mb-0">
+                                                Belum ada kategori.
+                                            </p>
                                         </div>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="card py-2">
-                                            <div class="card-body">
-                                                Kategori 3
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="card py-2">
-                                            <div class="card-body">
-                                                Kategori 4
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="card py-2">
-                                            <div class="card-body">
-                                                Kategori 5
-                                            </div>
-                                        </div>
-                                    </div>
+                                    @endforelse
                                 </div>
+
                             </div>
                         </div>
-                    </div>
                     {{-- search bar --}}
-                    <div class="input-icon w-100">
-                        <input type="text" value="" class="form-control form-control-rounded"
-                            placeholder="cari Judul, Produk, Penulis..." />
-                        <span class="input-icon-addon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" aria-hidden="true" focusable="false" class="icon">
-                                <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
-                                <path d="M21 21l-6 -6" />
+                    <form method="GET" action="{{ route('search') }}" class="input-icon flex-fill py-0">
+                        <input type="text" name="q" value="{{ request('q') }}"
+                            class="form-control form-control-rounded"
+                            placeholder="Cari judul, produk, buku, penulis..." />
+                        <button type="submit" class="input-icon-addon btn border-0 p-0 bg-transparent">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <circle cx="10" cy="10" r="7" />
+                                <line x1="21" y1="21" x2="15" y2="15" />
                             </svg>
-                        </span>
-                    </div>
+                        </button>
+                    </form>
+
                     {{-- icon keranjang --}}
-                    <div class="ms-2">
+                    <div class="flex-shrink-0">
                         <button class="btn btn-light rounded-circle" type="button" aria-label="Keranjang">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

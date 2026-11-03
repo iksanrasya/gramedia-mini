@@ -1,14 +1,15 @@
 <?php
 
 use App\Http\Controllers\BookCategoryController;
+use App\Http\Controllers\BookController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\BookController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('home');
-})->name('home');
+Route::get('/', [UserController::class, 'home'])->name('home');
+Route::get('/search', [UserController::class, 'search'])->name('search');
+Route::get('/categories/{category}', [BookCategoryController::class, 'show'])->name('categories.show');
+
 // kelompok routen yang gaboleh di akses kalau udah login
 Route::middleware(['IsGuest'])->group(function () {
 
@@ -36,6 +37,7 @@ Route::middleware(['IsLoggedIn'])->group(function () {
 
         Route::resource('book-categories', BookCategoryController::class)->except('show');
         Route::resource('subscription-packages', SubscriptionPackageController::class)->except('show');
-        Route::resource('books',BookController::class)->except('show');
+        Route::resource('books', BookController::class)->except('show');
+
     });
 });

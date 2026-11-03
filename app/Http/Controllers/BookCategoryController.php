@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BookCategory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
@@ -66,9 +67,34 @@ class BookCategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(BookCategory $bookCategory)
+    public function show(Request $request, BookCategory $category): View
     {
-        //
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'sort' => ['nullable', 'in:price_asc,price_desc,newest'],
+        ]);
+        $query = trim($validated['q'] ?? '');
+        $sort = $validated['sort'] ?? 'newest';
+
+        [$sortColumn, $sortDirection] = match ($sort) {
+            'price_asc' => ['price', 'asc'],
+            'price_desc' => ['price', 'desc'],
+            default => ['created_at', 'desc'],
+        };
+
+        $books = $category->books()
+            ->when($query !== '', function ($books) use ($query) {
+                $books->where(function ($books) use ($query) {
+                    $books->where('title', 'like', '%'.$query.'%')
+                        ->orWhere('writer', 'like', '%'.$query.'%');
+                });
+            })
+            ->orderBy($sortColumn, $sortDirection)
+            ->orderByDesc('id')
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('categories.show', compact('category', 'books', 'query', 'sort'));
     }
 
     /**

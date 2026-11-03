@@ -66,6 +66,115 @@ class ApplicationBehaviorTest extends TestCase
             ->assertSessionHasErrors('name');
     }
 
+    public function test_guest_can_open_a_category_and_only_see_its_books(): void
+    {
+        $category = BookCategory::create(['name' => 'Fiksi']);
+        $otherCategory = BookCategory::create(['name' => 'Sejarah']);
+        Book::create([
+            'cover' => 'fiction.jpg',
+            'title' => 'Novel Fiksi',
+            'price' => 50000,
+            'language' => 'id',
+            'publisher' => 'Penerbit',
+            'writer' => 'Penulis',
+            'release_date' => '2026-01-01',
+            'page_of_book' => 100,
+            'category_id' => $category->id,
+        ]);
+        Book::create([
+            'cover' => 'history.jpg',
+            'title' => 'Buku Sejarah',
+            'price' => 50000,
+            'language' => 'id',
+            'publisher' => 'Penerbit',
+            'writer' => 'Sejarawan',
+            'release_date' => '2026-01-01',
+            'page_of_book' => 100,
+            'category_id' => $otherCategory->id,
+        ]);
+
+        $this->get(route('categories.show', $category))
+            ->assertOk()
+            ->assertViewIs('categories.show')
+            ->assertSee('Novel Fiksi')
+            ->assertDontSee('Buku Sejarah');
+    }
+
+    public function test_homepage_shows_only_the_three_newest_subscription_packages_with_database_values(): void
+    {
+        $packages = [
+            ['name_package' => 'Paket Terlama', 'description' => 'Deskripsi lama', 'color' => '#111111', 'price' => 10000, 'created_at' => '2026-01-01 00:00:00'],
+            ['name_package' => 'Paket Terbaru 3', 'description' => 'Deskripsi tiga', 'color' => '#333333', 'price' => 30000, 'created_at' => '2026-02-01 00:00:00'],
+            ['name_package' => 'Paket Terbaru 2', 'description' => 'Deskripsi dua', 'color' => '#222222', 'price' => 20000, 'created_at' => '2026-03-01 00:00:00'],
+            ['name_package' => 'Paket Terbaru 1', 'description' => 'Deskripsi satu', 'color' => '#abcdef', 'price' => 40000, 'created_at' => '2026-04-01 00:00:00'],
+        ];
+
+        foreach ($packages as $packageData) {
+            $createdAt = $packageData['created_at'];
+            unset($packageData['created_at']);
+
+            SubscriptionPackage::create($packageData)
+                ->forceFill(['created_at' => $createdAt])
+                ->save();
+        }
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder(['Paket Terbaru 1', 'Paket Terbaru 2', 'Paket Terbaru 3'], false)
+            ->assertDontSee('Paket Terlama')
+            ->assertSee('Deskripsi satu')
+            ->assertSee('Rp 40.000')
+            ->assertSee('style="background-color: #abcdef;"', false);
+    }
+
+    public function test_category_search_matches_book_title_or_writer_only_in_the_selected_category(): void
+    {
+        $category = BookCategory::create(['name' => 'Fiksi']);
+        $otherCategory = BookCategory::create(['name' => 'Sejarah']);
+        $this->createBookInCategory($category, 'Target Novel', 'Penulis biasa', 50000, '2026-01-01 00:00:00');
+        $this->createBookInCategory($category, 'Karya biasa', 'Target Writer', 30000, '2026-02-01 00:00:00');
+        $this->createBookInCategory($category, 'Buku lain', 'Penulis lain', 20000, '2026-03-01 00:00:00');
+        $this->createBookInCategory($otherCategory, 'Target Sejarah', 'Penulis luar', 10000, '2026-04-01 00:00:00');
+
+        $this->get(route('categories.show', ['category' => $category, 'q' => 'Target']))
+            ->assertOk()
+            ->assertSee('Kategori: "Fiksi"', false)
+            ->assertSee('Target Novel')
+            ->assertSee('Target Writer')
+            ->assertDontSee('Buku lain')
+            ->assertDontSee('Target Sejarah');
+    }
+
+    public function test_category_books_can_be_sorted_by_price_or_creation_date(): void
+    {
+        $category = BookCategory::create(['name' => 'Fiksi']);
+        $this->createBookInCategory($category, 'Buku Termurah', 'Penulis A', 10000, '2026-01-01 00:00:00');
+        $this->createBookInCategory($category, 'Buku Tengah', 'Penulis B', 20000, '2026-02-01 00:00:00');
+        $this->createBookInCategory($category, 'Buku Termahal', 'Penulis C', 30000, '2026-03-01 00:00:00');
+
+        $this->get(route('categories.show', ['category' => $category, 'sort' => 'price_asc']))
+            ->assertOk()
+            ->assertSeeInOrder(['Buku Termurah', 'Buku Tengah', 'Buku Termahal']);
+
+        $this->get(route('categories.show', ['category' => $category, 'sort' => 'price_desc']))
+            ->assertOk()
+            ->assertSeeInOrder(['Buku Termahal', 'Buku Tengah', 'Buku Termurah']);
+
+        $this->get(route('categories.show', ['category' => $category, 'sort' => 'newest']))
+            ->assertOk()
+            ->assertSeeInOrder(['Buku Termahal', 'Buku Tengah', 'Buku Termurah']);
+    }
+
+    public function test_category_books_reject_unknown_sort_options(): void
+    {
+        $category = BookCategory::create(['name' => 'Fiksi']);
+
+        $this->from(route('categories.show', $category))
+            ->get(route('categories.show', ['category' => $category, 'sort' => 'title asc']))
+            ->assertRedirect(route('categories.show', $category))
+            ->assertSessionHasErrors('sort');
+    }
+
     public function test_category_update_allows_its_current_name_but_rejects_another_category_name(): void
     {
         $this->actingAs($this->admin());
@@ -210,5 +319,29 @@ class ApplicationBehaviorTest extends TestCase
         $admin->forceFill(['role' => 'admin'])->save();
 
         return $admin;
+    }
+
+    private function createBookInCategory(
+        BookCategory $category,
+        string $title,
+        string $writer,
+        int $price,
+        string $createdAt
+    ): Book {
+        $book = Book::create([
+            'cover' => 'cover.jpg',
+            'title' => $title,
+            'price' => $price,
+            'language' => 'id',
+            'publisher' => 'Penerbit',
+            'writer' => $writer,
+            'release_date' => '2026-01-01',
+            'page_of_book' => 100,
+            'category_id' => $category->id,
+        ]);
+
+        $book->forceFill(['created_at' => $createdAt])->save();
+
+        return $book;
     }
 }
